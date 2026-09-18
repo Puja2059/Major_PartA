@@ -381,8 +381,8 @@ def create_app(test_config=None):
             if not knowledge.find_document(legal_directory(), document_id):
                 raise ApiError("Knowledge document not found.", 404)
         language = payload.get("language")
-        if language is not None and (not isinstance(language, str) or language not in {"English", "नेपाली", "Hindi"}):
-            raise ApiError("language must be English, नेपाली, or Hindi.")
+        if language is not None and (not isinstance(language, str) or language not in {"English", "नेपाली"}):
+            raise ApiError("language must be English or नेपाली.")
         revision = storage.chat_revision(database_path())
         response = assistant.answer(
             legal_directory(), question, storage.list_conversations(database_path())[-6:],

@@ -275,7 +275,7 @@ function recentChatsMarkup(){
 }
 function recentChatsModal(){showModal('Recent chats',`<p class="modal-intro">Select a previous question to reopen it, or delete only that chat.</p>${recentChatsMarkup()}`);}
 function chatLanguageModal(){
-  const options=[['','Auto · question language'],['English','English'],['नेपाली','नेपाली'],['Hindi','हिन्दी']];
+  const options=[['','Auto · question language'],['English','English'],['नेपाली','नेपाली']];
   showModal('Chat language',`<form id="chat-language-form"><div class="field"><label for="chat-language-choice">Reply language</label><select id="chat-language-choice" name="language">${options.map(([value,label])=>`<option value="${esc(value)}" ${state.chatLanguage===value?'selected':''}>${label}</option>`).join('')}</select><small>Auto follows the language used in your question.</small></div><div class="form-actions"><button type="button" class="btn btn-secondary" data-action="close-modal">Cancel</button><button type="submit" class="btn btn-primary">${icon('check')}Save language</button></div></form>`);
 }
 function answerFromModal(){
