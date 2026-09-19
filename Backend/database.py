@@ -11,7 +11,9 @@ except ImportError:
 
 
 if load_dotenv is not None:
-    load_dotenv(Path(__file__).resolve().parent / ".env")
+    backend_dir = Path(__file__).resolve().parent
+    load_dotenv(backend_dir / ".env")
+    load_dotenv(backend_dir.parent / ".env")
 
 
 def has_turso_credentials():

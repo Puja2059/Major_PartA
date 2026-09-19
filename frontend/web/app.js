@@ -71,9 +71,7 @@ function featureInteractive(feature){return state.projectConfig?.features?.[feat
 function stageLocked(feature){return !featureInteractive(feature);}
 function stageAttrs(feature){return stageLocked(feature)?'disabled aria-disabled="true" data-stage-locked="true"':'';}
 function stageNotice(feature){
-  if(!stageLocked(feature))return '';
-  const label=state.projectConfig?.features?.[feature]?.label||feature;
-  return `<div class="notice warning stage-notice" role="status">${icon('lock')}<span><strong>${esc(label)} is reserved for Part B.</strong> The complete frontend is available for review now; actions will be enabled after authentication, permissions and the Part B workflow are added.</span></div>`;
+  return '';
 }
 
 function hydrateIcons(root=document){ root.querySelectorAll('[data-icon]').forEach(el => { el.innerHTML=icon(el.dataset.icon); el.removeAttribute('data-icon'); }); }
@@ -311,7 +309,7 @@ function renderAssistant(){if(state.page==='assistant'){main.innerHTML=`<div cla
 async function handleAction(el,event){
   const a=el.dataset.action;
   if(el.tagName==='A')event.preventDefault();
-  if(a==='stage-locked'){toast('This workflow is reserved for Part B.',true);return;}
+  if(a==='stage-locked'){toast('This workflow is currently unavailable.',true);return;}
   switch(a){
     case 'navigate':navigate(el.dataset.page);break;
     case 'menu':document.getElementById('sidebar').classList.toggle('open');document.getElementById('sidebar-backdrop').classList.toggle('open');break;
@@ -324,10 +322,10 @@ async function handleAction(el,event){
       modal.close();navigate(el.dataset.page);break;
     }
     case 'retry':state.data=null;await renderPage();break;
-    case 'add-task':if(stageLocked('legal_compliance')){toast('Legal compliance actions are reserved for Part B.',true);break;}taskModal();break;
+    case 'add-task':if(stageLocked('legal_compliance')){toast('Legal compliance actions are currently unavailable.',true);break;}taskModal();break;
     case 'task-filter':state.taskFilter=el.dataset.filter;await renderPage();break;
-    case 'toggle-task':{if(stageLocked('legal_compliance')){toast('Legal compliance actions are reserved for Part B.',true);break;}const task=state.data.tasks.find(t=>String(t.id)===el.dataset.id);if(!task)return;el.disabled=true;try{await mutateTask(task.id,{status:task.status==='completed'?'pending':'completed'});toast(task.status==='completed'?'Task reopened.':'One more step complete. Nicely done.');}finally{el.disabled=false;}break;}
-    case 'delete-task':{if(stageLocked('legal_compliance')){toast('Legal compliance actions are reserved for Part B.',true);break;}const t=state.data.tasks.find(t=>String(t.id)===el.dataset.id);if(!t)return;showModal('Remove this task?',`<p>Remove “${esc(t.title)}” from your checklist? You can add a new task whenever you need one.</p><div class="form-actions">${button('Keep task','close-modal','close','secondary')}${button('Remove task','confirm-delete-task','trash','danger',`data-id="${esc(t.id)}"`)}</div>`);break;}
+    case 'toggle-task':{if(stageLocked('legal_compliance')){toast('Legal compliance actions are currently unavailable.',true);break;}const task=state.data.tasks.find(t=>String(t.id)===el.dataset.id);if(!task)return;el.disabled=true;try{await mutateTask(task.id,{status:task.status==='completed'?'pending':'completed'});toast(task.status==='completed'?'Task reopened.':'One more step complete. Nicely done.');}finally{el.disabled=false;}break;}
+    case 'delete-task':{if(stageLocked('legal_compliance')){toast('Legal compliance actions are currently unavailable.',true);break;}const t=state.data.tasks.find(t=>String(t.id)===el.dataset.id);if(!t)return;showModal('Remove this task?',`<p>Remove “${esc(t.title)}” from your checklist? You can add a new task whenever you need one.</p><div class="form-actions">${button('Keep task','close-modal','close','secondary')}${button('Remove task','confirm-delete-task','trash','danger',`data-id="${esc(t.id)}"`)}</div>`);break;}
     case 'confirm-delete-task':el.disabled=true;try{await api(`/tasks/${encodeURIComponent(el.dataset.id)}`,{method:'DELETE'});modal.close();await refreshData();await renderPage();toast('Task removed.');}finally{el.disabled=false;}break;
     case 'scan-help':showModal('A focused website health check',`<p>NitiShield requests your public website and checks the response for HTTPS and protective HTTP headers. Each passed check contributes to the score.</p><div class="notice">${icon('shield-check')}<span>Only assess websites you own or are authorised to review. Private network addresses are not supported.</span></div><p>Results reflect a single point in time. They do not test application logic, credentials, malware, or every possible vulnerability. A missing header is a configuration finding, not proof of an exploitable issue.</p>`);break;
     case 'scan-detail':{const scan=state.data.scans.find(s=>String(s.id)===el.dataset.id);if(scan)scanDetail(scan);break;}
@@ -370,8 +368,8 @@ async function waitForView(id){for(let i=0;i<50;i++){if(document.getElementById(
 async function handleForm(form){
   const submit=form.querySelector('[type="submit"]');const original=submit?.innerHTML;
   if(submit?.disabled)return;
-  if(form.id==='task-form'&&stageLocked('legal_compliance')){toast('Legal compliance actions are reserved for Part B.',true);return;}
-  if(form.id==='scan-form'&&stageLocked('security_scanner')){toast('Security assessments are reserved for Part B.',true);return;}
+  if(form.id==='task-form'&&stageLocked('legal_compliance')){toast('Legal compliance actions are currently unavailable.',true);return;}
+  if(form.id==='scan-form'&&stageLocked('security_scanner')){toast('Security assessments are currently unavailable.',true);return;}
   const values=Object.fromEntries(new FormData(form));
   if(submit){submit.disabled=true;submit.innerHTML='<span class="spinner"></span> Working...';}
   try{
