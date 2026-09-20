@@ -12,6 +12,9 @@ if (-not (Test-Path -LiteralPath $projectPythonPath)) {
     throw 'The project environment is missing. Create .venv and install Backend/requirements-web.txt first.'
 }
 
+$projectPythonPath = (Resolve-Path -LiteralPath $projectPythonPath).Path
+$appScriptPath = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot 'Backend\app.py')).Path
+
 $previousProjectPort = $env:PORT
 $previousProjectHost = $env:NITISHIELD_HOST
 $previousProjectStage = $env:NITISHIELD_PROJECT_STAGE
@@ -24,7 +27,7 @@ try {
     $healthUrl = "http://127.0.0.1:$Port/api/health"
     Write-Host "Starting NitiShield at $dashboardUrl in $ProjectStage mode (also available on this computer's network address)."
     $serverProcess = Start-Process -FilePath $projectPythonPath `
-        -ArgumentList @('-u', (Join-Path $PSScriptRoot 'Backend\app.py')) `
+        -ArgumentList @('-u', "`"$appScriptPath`"") `
         -WorkingDirectory $PSScriptRoot -NoNewWindow -PassThru
 
     $ready = $false
