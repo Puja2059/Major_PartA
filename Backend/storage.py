@@ -46,29 +46,127 @@ def connect(db_path):
 def initialize(db_path):
     with connect(db_path) as connection:
         connection.executescript(
-            
+            """
+            CREATE TABLE IF NOT EXISTS settings (
+                id INTEGER PRIMARY KEY,
+                business_name TEXT NOT NULL,
+                owner TEXT NOT NULL,
+                email TEXT NOT NULL,
+                website TEXT NOT NULL,
+                business_type TEXT NOT NULL,
+                address TEXT NOT NULL,
+                notifications INTEGER NOT NULL DEFAULT 1
+            );
+
+            CREATE TABLE IF NOT EXISTS tasks (
+                id INTEGER PRIMARY KEY,
+                title TEXT NOT NULL,
+                description TEXT NOT NULL,
+                category TEXT NOT NULL,
+                priority TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'pending',
+                due_date TEXT,
+                created_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS activity (
+                id INTEGER PRIMARY KEY,
+                title TEXT NOT NULL,
+                detail TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                type TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS scans (
+                id INTEGER PRIMARY KEY,
+                url TEXT NOT NULL,
+                score INTEGER NOT NULL,
+                created_at TEXT NOT NULL,
+                checks_passed INTEGER NOT NULL,
+                checks_total INTEGER NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS findings (
+                id INTEGER PRIMARY KEY,
+                scan_id INTEGER NOT NULL REFERENCES scans(id) ON DELETE CASCADE,
+                title TEXT NOT NULL,
+                severity TEXT NOT NULL,
+                status TEXT NOT NULL,
+                description TEXT NOT NULL,
+                recommendation TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS generated_documents (
+                id INTEGER PRIMARY KEY,
+                type TEXT NOT NULL,
+                title TEXT NOT NULL,
+                business_name TEXT NOT NULL,
+                owner TEXT NOT NULL,
+                address TEXT NOT NULL,
+                effective_date TEXT NOT NULL,
+                content TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS workspace_state (
+                id INTEGER PRIMARY KEY,
+                chat_revision INTEGER NOT NULL DEFAULT 0,
+                tasks_seeded INTEGER NOT NULL DEFAULT 0
+            );
+
+            CREATE TABLE IF NOT EXISTS conversations (
+                id INTEGER PRIMARY KEY,
+                question TEXT NOT NULL,
+                answer TEXT NOT NULL,
+                results_json TEXT NOT NULL,
+                context_json TEXT NOT NULL DEFAULT '{}',
+                created_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS knowledge_documents (
+                id TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                file_name TEXT NOT NULL,
+                pages INTEGER NOT NULL,
+                size INTEGER NOT NULL
+            );
+            """
         )
 
-        connection.execute('BEGIN IMMEDIATE')
         if 'context_json' not in {row['name'] for row in connection.execute('PRAGMA table_info(conversations)')}:
             connection.execute("ALTER TABLE conversations ADD COLUMN context_json TEXT NOT NULL DEFAULT '{}'")
-        profile_insert = connection.execute(
-            ,
-            (
-                DEFAULT_PROFILE["business_name"],
-                DEFAULT_PROFILE["owner"],
-                DEFAULT_PROFILE["email"],
-                DEFAULT_PROFILE["website"],
-                DEFAULT_PROFILE["business_type"],
-                DEFAULT_PROFILE["address"],
-                int(DEFAULT_PROFILE["notifications"]),
-            ),
+
+        if 'tasks_seeded' not in {row['name'] for row in connection.execute('PRAGMA table_info(workspace_state)')}:
+            connection.execute("ALTER TABLE workspace_state ADD COLUMN tasks_seeded INTEGER NOT NULL DEFAULT 0")
+
+        connection.execute(
+            "INSERT OR IGNORE INTO workspace_state (id, chat_revision, tasks_seeded) VALUES (1, 0, 0)"
         )
-        if profile_insert.rowcount == 1:
+
+        seeded = connection.execute("SELECT tasks_seeded FROM workspace_state WHERE id = 1").fetchone()
+        seeded_value = seeded[0] if seeded else 0
+
+        if connection.execute("SELECT COUNT(*) FROM settings WHERE id = 1").fetchone()[0] == 0:
+            connection.execute(
+                "INSERT INTO settings (id, business_name, owner, email, website, business_type, address, notifications) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    1,
+                    DEFAULT_PROFILE["business_name"],
+                    DEFAULT_PROFILE["owner"],
+                    DEFAULT_PROFILE["email"],
+                    DEFAULT_PROFILE["website"],
+                    DEFAULT_PROFILE["business_type"],
+                    DEFAULT_PROFILE["address"],
+                    int(DEFAULT_PROFILE["notifications"]),
+                ),
+            )
+
+        if seeded_value == 0 and connection.execute("SELECT COUNT(*) FROM tasks").fetchone()[0] == 0:
             connection.executemany(
-                ,
+                "INSERT INTO tasks (title, description, category, priority, status, due_date, created_at) VALUES (?, ?, ?, ?, 'pending', NULL, ?)",
                 [(*task, now_iso()) for task in STARTER_TASKS],
             )
+            connection.execute("UPDATE workspace_state SET tasks_seeded = 1 WHERE id = 1")
 
 
 def _profile(row):
@@ -80,7 +178,8 @@ def _profile(row):
 
 def get_profile(db_path):
     with connect(db_path) as connection:
-        return _profile(connection.execute("SELECT * FROM settings WHERE id = 1").fetchone())
+        row = connection.execute("SELECT * FROM settings WHERE id = 1").fetchone()
+        return _profile(row) if row else {**DEFAULT_PROFILE}
 
 
 def update_profile(db_path, updates):
@@ -112,8 +211,8 @@ def get_task(db_path, task_id):
 def create_task(db_path, values):
     with connect(db_path) as connection:
         cursor = connection.execute(
-            ,
-            (values["title"], values["category"], values["priority"], values["due_date"], now_iso()),
+            "INSERT INTO tasks (title, description, category, priority, status, due_date, created_at) VALUES (?, ?, ?, ?, 'pending', ?, ?)",
+            (values["title"], "", values["category"], values["priority"], values["due_date"], now_iso()),
         )
         task_id = cursor.lastrowid
         add_activity(connection, "Task added", values["title"], "task")
@@ -160,13 +259,13 @@ def save_scan(db_path, url, assessment):
     with connect(db_path) as connection:
         created_at = now_iso()
         cursor = connection.execute(
-            ,
+            "INSERT INTO scans (url, score, created_at, checks_passed, checks_total) VALUES (?, ?, ?, ?, ?)",
             (url, assessment["score"], created_at, assessment["checks_passed"], assessment["checks_total"]),
         )
         scan_id = cursor.lastrowid
         for finding in assessment["findings"]:
             connection.execute(
-                ,
+                "INSERT INTO findings (scan_id, title, severity, status, description, recommendation) VALUES (?, ?, ?, ?, ?, ?)",
                 (
                     scan_id,
                     finding["title"],
@@ -187,7 +286,7 @@ def save_scan(db_path, url, assessment):
 
 def _findings(connection, scan_id):
     rows = connection.execute(
-        ,
+        "SELECT * FROM findings WHERE scan_id = ? ORDER BY id",
         (scan_id,),
     ).fetchall()
     return [dict(row) for row in rows]
@@ -215,7 +314,7 @@ def save_document(db_path, values, title, content):
     with connect(db_path) as connection:
         created_at = now_iso()
         cursor = connection.execute(
-            ,
+            "INSERT INTO generated_documents (type, title, business_name, owner, address, effective_date, content, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 values["type"], title, values["business_name"], values["owner"],
                 values["address"], values["effective_date"], content, created_at,
@@ -261,7 +360,8 @@ def delete_document(db_path, document_id):
 
 def chat_revision(db_path):
     with connect(db_path) as connection:
-        return connection.execute("SELECT chat_revision FROM workspace_state WHERE id = 1").fetchone()[0]
+        row = connection.execute("SELECT chat_revision FROM workspace_state WHERE id = 1").fetchone()
+        return row[0] if row else 0
 
 
 def save_conversation(db_path, question, answer, results, expected_revision=None, context=None):
@@ -271,10 +371,16 @@ def save_conversation(db_path, question, answer, results, expected_revision=None
         if expected_revision is not None and revision != expected_revision:
             return None
         cursor = connection.execute(
-            ,
-            (question, answer, json.dumps(results, ensure_ascii=False),
-             json.dumps({key: value for key, value in (context or {}).items() if key in {'mode', 'language', 'source'}}), now_iso()),
+            "INSERT INTO conversations (question, answer, results_json, context_json, created_at) VALUES (?, ?, ?, ?, ?)",
+            (
+                question,
+                answer,
+                json.dumps(results, ensure_ascii=False),
+                json.dumps({key: value for key, value in (context or {}).items() if key in {"mode", "language", "source"}}, ensure_ascii=False),
+                now_iso(),
+            ),
         )
+        connection.execute("UPDATE workspace_state SET chat_revision = chat_revision + 1 WHERE id = 1")
         add_activity(connection, "Assistant answer saved", "A conversation was saved to your workspace.", "search")
         return cursor.lastrowid
 
@@ -282,17 +388,27 @@ def save_conversation(db_path, question, answer, results, expected_revision=None
 def list_conversations(db_path):
     with connect(db_path) as connection:
         rows = connection.execute("SELECT * FROM conversations ORDER BY id ASC").fetchall()
-        return [
-            {
-                "id": row["id"],
-                "question": row["question"],
-                "answer": row["answer"],
-                "results": json.loads(row["results_json"]),
-                "created_at": row["created_at"],
-
-            }
-            for row in rows
-        ]
+        result = []
+        for row in rows:
+            context = {}
+            if row["context_json"]:
+                try:
+                    context = json.loads(row["context_json"])
+                except (TypeError, ValueError):
+                    context = {}
+            result.append(
+                {
+                    "id": row["id"],
+                    "question": row["question"],
+                    "answer": row["answer"],
+                    "results": json.loads(row["results_json"]),
+                    "created_at": row["created_at"],
+                    "mode": context.get("mode"),
+                    "language": context.get("language"),
+                    "source": context.get("source"),
+                }
+            )
+        return result
 
 
 def clear_conversations(db_path):
@@ -313,15 +429,16 @@ def delete_conversation(db_path, conversation_id):
 
 
 def sync_knowledge(db_path, records, uploaded=None):
-    
     with connect(db_path) as connection:
-        connection.executemany(
-            ,
-            [(r["id"], r["title"], r["file_name"], r["pages"], r["size"]) for r in records],
-        )
+        if records:
+            connection.executemany(
+                "INSERT OR REPLACE INTO knowledge_documents (id, title, file_name, pages, size) VALUES (?, ?, ?, ?, ?)",
+                [(r["id"], r["title"], r["file_name"], r["pages"], r["size"]) for r in records],
+            )
         current_ids = {r["id"] for r in records}
         stale = [(r["id"],) for r in connection.execute("SELECT id FROM knowledge_documents") if r["id"] not in current_ids]
-        connection.executemany("DELETE FROM knowledge_documents WHERE id = ?", stale)
+        if stale:
+            connection.executemany("DELETE FROM knowledge_documents WHERE id = ?", stale)
         if uploaded:
             add_activity(connection, "PDF added to knowledge base", uploaded["title"], "upload")
         rows = connection.execute("SELECT * FROM knowledge_documents ORDER BY title COLLATE NOCASE, id").fetchall()

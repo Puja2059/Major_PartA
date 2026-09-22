@@ -16,9 +16,26 @@ ROOT = Path(__file__).resolve().parents[2]
 
 class LauncherTests(unittest.TestCase):
     def test_python_entries_default_to_the_same_dashboard_port(self):
+        probe = """
+import json
+import runpy
+import sys
+from flask import Flask
 
+captured = {}
+original_run = Flask.run
 
-        probe = 
+def capture_run(self, *args, **kwargs):
+    captured.update(kwargs)
+
+Flask.run = capture_run
+try:
+    runpy.run_path(sys.argv[1], run_name="__main__")
+finally:
+    Flask.run = original_run
+
+print(json.dumps({"port": captured.get("port", 8501), "host": captured.get("host", "127.0.0.1")}))
+"""
         with tempfile.TemporaryDirectory() as directory:
             env = {key: value for key, value in os.environ.items()
                    if key not in {"PORT", "NITISHIELD_HOST"}}
@@ -33,7 +50,18 @@ class LauncherTests(unittest.TestCase):
                     self.assertEqual(json.loads(result.stdout), {"port": 8501, "host": "127.0.0.1"})
 
     def test_relative_database_setting_is_independent_of_launch_folder(self):
-        probe = 
+        probe = """
+import json
+import os
+import sys
+from pathlib import Path
+
+sys.path.insert(0, sys.argv[1])
+import app
+
+configured = Path(os.environ["NITISHIELD_DB"]).resolve()
+print(json.dumps({"database": str(app.create_app({"TESTING": True}).config["WORKSPACE_DB"])}))
+"""
         with tempfile.TemporaryDirectory() as directory:
             expected = Path(directory) / "shared.db"
             env = {**os.environ, "NITISHIELD_DB": str(expected)}
