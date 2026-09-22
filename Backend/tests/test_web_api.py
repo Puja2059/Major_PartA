@@ -46,7 +46,7 @@ class WebApiTests(unittest.TestCase):
             }
         )
         self.client = self.app.test_client()
-        # Model inference is the external boundary; keep PDF retrieval and storage real.
+
         model = patch('requests.post', side_effect=__import__('requests').ConnectionError('offline test'))
         model.start()
         self.addCleanup(model.stop)

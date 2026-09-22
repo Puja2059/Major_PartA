@@ -22,7 +22,6 @@ STOPWORDS = {
     "law", "act", "section", "chapter",
 }
 
-# Small vocabulary bridge for everyday questions about the legal library.
 CONCEPTS = (
     {"hack", "hacks", "hacking", "hacked", "unauthorized", "unauthorised", "access"},
     {"online", "electronic", "digital", "विद्युतीय"},
@@ -66,7 +65,7 @@ def _inspect_pdf(data):
 
 @lru_cache(maxsize=64)
 def _read_record(path, size, modified_ns):
-    # Size and nanosecond mtime invalidate cached extraction when a PDF changes.
+
     data = path.read_bytes()
     try:
         pages = _inspect_pdf(data)
@@ -137,7 +136,7 @@ def save_upload(directory, uploaded_file):
 
 
 def _keywords(question):
-    # Combining marks belong to words in Nepali/Hindi and many other scripts.
+
     tokens = "".join(character if unicodedata.category(character)[0] in "LMN" else " "
                      for character in question.casefold()).split()
     return [token for token in tokens if (len(token) >= 3 or token.isdigit()) and token not in STOPWORDS]
@@ -177,7 +176,7 @@ def search(directory, question, limit=5, document_id=None, overview=False):
     if not chunks:
         return []
     if overview:
-        # Spread a bounded overview over the PDF, including its final pages.
+
         count = min(limit, len(chunks))
         indexes = [round(i * (len(chunks) - 1) / max(1, count - 1)) for i in range(count)]
         return [{**chunks[i], "retrieval_method": "overview"} for i in indexes]
@@ -203,7 +202,7 @@ def search(directory, question, limit=5, document_id=None, overview=False):
             inverse_frequency = math.log(1 + (len(chunks) - document_frequency[term] + 0.5) / (document_frequency[term] + 0.5))
             weight = 1.0 if term in original else 0.75
             score += weight * inverse_frequency * frequency * 2.5 / (frequency + 1.5 * (0.25 + 0.75 * length / average_length))
-        # Prefer coverage of the actual question over a repeated common term.
+
         covered = original & counts.keys()
         for term in original - covered:
             if any(term in concept and concept & counts.keys() for concept in CONCEPTS):
@@ -225,6 +224,6 @@ def search(directory, question, limit=5, document_id=None, overview=False):
 
 
 def current_passages(directory, previous_results, document_id=None):
-    """Re-read follow-up evidence so removed/replaced PDFs cannot remain sources."""
+    
     current = {chunk["chunk_id"]: chunk for chunk in _chunks(directory, document_id)}
     return [current[item["chunk_id"]] for item in previous_results if item["chunk_id"] in current]

@@ -1,4 +1,4 @@
-"""Run the web app with disposable state for browser verification."""
+
 import os
 import sys
 from pathlib import Path
@@ -14,8 +14,7 @@ import assistant
 import json
 import requests
 
-# Keep the browser success path deterministic by replacing only the external
-# network boundary. The real URL validation, header scoring and storage run.
+
 original_resolve = scanning.resolve_public_addresses
 original_fetch = scanning._fetch_once
 
@@ -39,13 +38,12 @@ application = create_app({
     "WORKSPACE_DB": test_root / "workspace.db",
     "LEGAL_DOCUMENTS_DIR": test_root / "legal_documents",
     "TESTING": True,
-    # Browser regression tests cover the complete interactive application by
-    # default; a Part A browser check can override this with NITISHIELD_TEST_STAGE.
+
+
     "PROJECT_STAGE": os.environ.get("NITISHIELD_TEST_STAGE", "full"),
 })
 
-# Replace only external inference for repeatable UI checks. Run with
-# NITISHIELD_LIVE_AI=1 to exercise the installed Ollama model instead.
+
 if os.environ.get("NITISHIELD_LIVE_AI") != "1":
     application.config.update(CHAT_MODEL="browser-fixture", CHAT_BASE_URL="http://model-fixture.invalid")
     original_post = requests.post

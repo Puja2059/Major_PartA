@@ -1,4 +1,4 @@
-"""Regression cases for ordinary conversation and Nepali PDF questions."""
+
 import io
 import json
 import sys
@@ -16,8 +16,8 @@ import storage
 
 
 def nepali_pdf():
-    # Obtain PyMuPDF's bundled Devanagari font, then embed it with a Unicode
-    # character map. Story's shaped glyph map does not round-trip this fixture.
+
+
     with pymupdf.open() as font_document:
         page = font_document.new_page()
         page.insert_htmlbox((40, 40, 550, 800), '<p>बिदा</p>')

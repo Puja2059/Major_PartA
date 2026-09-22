@@ -21,14 +21,10 @@ from database import (
     add_chunk,
 )
 
-
-# Load embedding model once
 print("Loading embedding model...")
 embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
 print("Embedding model loaded.")
 
-
-# Create persistent ChromaDB client
 chroma_client = chromadb.PersistentClient(
     path=str(CHROMA_DIR)
 )
@@ -42,25 +38,17 @@ collection = chroma_client.get_or_create_collection(
 
 
 def clean_text(text):
-    """
-    Clean unnecessary spaces and line breaks.
-    """
+    
 
     text = text.replace("\x00", " ")
 
-    # Replace repeated whitespace with one space
     text = re.sub(r"\s+", " ", text)
 
     return text.strip()
 
 
 def detect_section(text):
-    """
-    Try to identify a section heading.
-
-    This is a simple detector.
-    It may need improvement depending on the PDF format.
-    """
+    
 
     patterns = [
         r"(Section\s+\d+)",
@@ -79,13 +67,7 @@ def detect_section(text):
 
 
 def split_text(text, chunk_size=CHUNK_SIZE, overlap=CHUNK_OVERLAP):
-    """
-    Split long text into overlapping chunks.
-
-    Example:
-    Chunk 1: characters 0-1000
-    Chunk 2: characters 850-1850
-    """
+    
 
     if chunk_size <= 0:
         raise ValueError("chunk_size must be greater than zero")
@@ -112,17 +94,7 @@ def split_text(text, chunk_size=CHUNK_SIZE, overlap=CHUNK_OVERLAP):
 
 
 def extract_pdf_pages(pdf_path):
-    """
-    Extract text from each page of a PDF.
-
-    Returns:
-        [
-            {
-                "page_number": 1,
-                "text": "..."
-            }
-        ]
-    """
+    
 
     pages = []
 
@@ -144,13 +116,10 @@ def extract_pdf_pages(pdf_path):
 
 
 def process_pdf(pdf_path):
-    """
-    Process one legal PDF.
-    """
+    
 
     print(f"\nProcessing: {pdf_path.name}")
 
-    # You can customize this later using a metadata file.
     law_name = pdf_path.stem.replace("_", " ").title()
 
     source = "Official Nepal legal source"
@@ -181,7 +150,6 @@ def process_pdf(pdf_path):
 
             section_name = detect_section(chunk_text)
 
-            # Create vector embedding
             embedding = embedding_model.encode(
                 chunk_text
             ).tolist()
@@ -195,7 +163,6 @@ def process_pdf(pdf_path):
                 "source": source,
             }
 
-            # Store vector and text in ChromaDB
             collection.upsert(
                 ids=[chunk_id],
                 documents=[chunk_text],
@@ -203,7 +170,6 @@ def process_pdf(pdf_path):
                 metadatas=[metadata],
             )
 
-            # Store searchable metadata and text in SQLite
             add_chunk(
                 document_id=document_id,
                 chunk_id=chunk_id,
@@ -222,9 +188,7 @@ def process_pdf(pdf_path):
 
 
 def main():
-    """
-    Process every PDF in legal_documents/.
-    """
+    
 
     initialize_database()
 

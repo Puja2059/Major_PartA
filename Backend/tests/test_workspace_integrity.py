@@ -1,4 +1,4 @@
-"""Regression checks for complete, database-backed workspace flows."""
+
 import io
 import sqlite3
 import sys

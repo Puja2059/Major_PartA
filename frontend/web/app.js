@@ -1,4 +1,4 @@
-/* NitiShield's browser workspace. All business state is stored by the Flask API. */
+
 'use strict';
 
 const paths = {
@@ -99,7 +99,7 @@ function toast(message,error=false) {
 }
 async function copyText(text){
   if(navigator.clipboard&&window.isSecureContext){
-    try{await navigator.clipboard.writeText(text);return;}catch{/* Try the browser's selection-based copy when permission is unavailable. */}
+    try{await navigator.clipboard.writeText(text);return;}catch{}
   }
   const previousFocus=document.activeElement;
   const selection=document.createElement('textarea');
@@ -139,7 +139,7 @@ function errorView(error){return `<div class="error-panel"><h2>Let’s reconnect
 function refreshData(){
   const version=++state.dataVersion;
   latestDataRefresh=Promise.all([api('/dashboard'),api('/project-config')]).then(([data,projectConfig])=>{
-    // A render waiting on an older response must also wait for its replacement.
+
     if(version!==state.dataVersion)return latestDataRefresh;
     state.data=data;state.projectConfig=projectConfig;state.knowledge=data.knowledge||[];state.documents=data.documents||[];state.conversations=data.conversations||state.conversations;updateProfile();
     return data;

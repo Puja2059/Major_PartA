@@ -1,4 +1,4 @@
-"""Both Python entry points must serve the same real workspace."""
+
 import json
 import os
 from pathlib import Path
@@ -16,17 +16,9 @@ ROOT = Path(__file__).resolve().parents[2]
 
 class LauncherTests(unittest.TestCase):
     def test_python_entries_default_to_the_same_dashboard_port(self):
-        # Intercept only the blocking server call; run the real entry points and
-        # app initialization in fresh interpreters, without touching live ports.
-        probe = """
-import json, runpy, sys
-from flask import Flask
-def capture(app, **kwargs):
-    print(json.dumps({'port': kwargs['port'], 'host': kwargs['host']}))
-Flask.run = capture
-sys.path.insert(0, sys.argv[2])
-runpy.run_path(sys.argv[1], run_name='__main__')
-"""
+
+
+        probe = 
         with tempfile.TemporaryDirectory() as directory:
             env = {key: value for key, value in os.environ.items()
                    if key not in {"PORT", "NITISHIELD_HOST"}}
@@ -41,16 +33,7 @@ runpy.run_path(sys.argv[1], run_name='__main__')
                     self.assertEqual(json.loads(result.stdout), {"port": 8501, "host": "127.0.0.1"})
 
     def test_relative_database_setting_is_independent_of_launch_folder(self):
-        probe = """
-import json, os, sys
-from pathlib import Path
-sys.path.insert(0, sys.argv[1])
-import app
-app.PROJECT_DIR = Path(sys.argv[2])
-os.environ['NITISHIELD_DB'] = 'shared.db'
-workspace = app.create_app()
-print(json.dumps({'database': str(workspace.config['WORKSPACE_DB'])}))
-"""
+        probe = 
         with tempfile.TemporaryDirectory() as directory:
             expected = Path(directory) / "shared.db"
             env = {**os.environ, "NITISHIELD_DB": str(expected)}

@@ -1,16 +1,12 @@
-"""Compatibility launcher for the shared, database-backed web application.
 
-Run with Python, or use start.ps1. The former Streamlit demonstration has been
-retired so scans, settings and metrics cannot display simulated results.
-"""
 from pathlib import Path
 import runpy
 import sys
 
 
 def main():
-    # Streamlit executes scripts with __name__ == '__main__' as well. Give its
-    # existing users the correct command instead of starting a conflicting server.
+
+
     if "streamlit" in sys.modules:
         from streamlit.runtime.scriptrunner import get_script_run_ctx
         if get_script_run_ctx(suppress_warning=True) is not None:

@@ -23,13 +23,7 @@ from database import get_all_chunks
 
 
 class LegalSearchEngine:
-    """
-    Hybrid legal search engine.
-
-    Uses:
-    1. ChromaDB semantic vector search
-    2. BM25 keyword search
-    """
+    
 
     def __init__(self):
         print("Loading legal search engine...")
@@ -59,9 +53,7 @@ class LegalSearchEngine:
         )
 
     def build_bm25_index(self):
-        """
-        Build BM25 index from SQLite legal chunks.
-        """
+        
 
         if not self.chunks:
             self.bm25 = None
@@ -77,9 +69,7 @@ class LegalSearchEngine:
         )
 
     def vector_search(self, question):
-        """
-        Search ChromaDB using semantic similarity.
-        """
+        
 
         if not isinstance(question, str) or not question.strip():
             return []
@@ -119,9 +109,7 @@ class LegalSearchEngine:
         return vector_results
 
     def bm25_search(self, question):
-        """
-        Search legal chunks using keyword matching.
-        """
+        
 
         if self.bm25 is None or not isinstance(question, str):
             return []
@@ -164,27 +152,21 @@ class LegalSearchEngine:
         return bm25_results
 
     def hybrid_search(self, question):
-        """
-        Combine vector and BM25 search results.
-
-        A chunk found by both methods receives a higher rank.
-        """
+        
 
         vector_results = self.vector_search(question)
         bm25_results = self.bm25_search(question)
 
         combined = {}
 
-        # Add vector results
         for result in vector_results:
             chunk_id = result["chunk_id"]
 
             combined[chunk_id] = {
-                **result,
+
                 "combined_score": 1.0,
             }
 
-        # Add or strengthen BM25 results
         for result in bm25_results:
             chunk_id = result["chunk_id"]
 
@@ -195,7 +177,7 @@ class LegalSearchEngine:
                 ] = "vector + bm25"
             else:
                 combined[chunk_id] = {
-                    **result,
+
                     "combined_score": 0.5,
                 }
 
@@ -219,7 +201,7 @@ class LegalSearchEngine:
         return self.external_search(question)
 
     def external_search(self, question):
-        """Search an external source when local legal documents do not match."""
+        
 
         if not EXTERNAL_SEARCH_ENABLED or not question.strip():
             return []

@@ -236,13 +236,7 @@ def create_app(test_config=None):
 
     @flask_app.get("/api/project-config")
     def project_config():
-        """Describe the presentation stage without changing stored workspace data.
-
-        Part A keeps every frontend screen visible while reserving selected
-        workflows for the Part B implementation. This endpoint is a UI
-        capability hint, not an authorization boundary; authenticated,
-        role-aware checks belong in the Part B backend.
-        """
+        
         interactive = flask_app.config["PROJECT_STAGE"] == "full"
         part_b_features = {"legal_compliance", "admin_panel", "user_panel"}
         return jsonify(
@@ -506,8 +500,8 @@ app = create_app()
 
 if __name__ == "__main__":
     if os.name == "nt":
-        # Windows SO_REUSEADDR permits two development servers on one port,
-        # which can leave the browser connected to an older app instance.
+
+
         from werkzeug.serving import ThreadedWSGIServer
         ThreadedWSGIServer.allow_reuse_address = False
         ThreadedWSGIServer.allow_reuse_port = False

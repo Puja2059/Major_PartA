@@ -46,92 +46,14 @@ def connect(db_path):
 def initialize(db_path):
     with connect(db_path) as connection:
         connection.executescript(
-            """
-            CREATE TABLE IF NOT EXISTS settings (
-                id INTEGER PRIMARY KEY CHECK (id = 1),
-                business_name TEXT NOT NULL,
-                owner TEXT NOT NULL,
-                email TEXT NOT NULL,
-                website TEXT NOT NULL,
-                business_type TEXT NOT NULL,
-                address TEXT NOT NULL,
-                notifications INTEGER NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS tasks (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL,
-                description TEXT NOT NULL,
-                category TEXT NOT NULL,
-                priority TEXT NOT NULL,
-                status TEXT NOT NULL,
-                due_date TEXT,
-                created_at TEXT NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS scans (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                url TEXT NOT NULL,
-                score INTEGER NOT NULL,
-                created_at TEXT NOT NULL,
-                checks_passed INTEGER NOT NULL,
-                checks_total INTEGER NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS findings (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                scan_id INTEGER NOT NULL REFERENCES scans(id) ON DELETE CASCADE,
-                title TEXT NOT NULL,
-                severity TEXT NOT NULL,
-                status TEXT NOT NULL,
-                description TEXT NOT NULL,
-                recommendation TEXT NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS generated_documents (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                type TEXT NOT NULL,
-                title TEXT NOT NULL,
-                business_name TEXT NOT NULL,
-                owner TEXT NOT NULL,
-                address TEXT NOT NULL,
-                effective_date TEXT NOT NULL,
-                content TEXT NOT NULL,
-                created_at TEXT NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS activity (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL,
-                detail TEXT NOT NULL,
-                created_at TEXT NOT NULL,
-                type TEXT NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS conversations (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                question TEXT NOT NULL,
-                answer TEXT NOT NULL,
-                results_json TEXT NOT NULL,
-                context_json TEXT NOT NULL DEFAULT '{}',
-                created_at TEXT NOT NULL
-            );
-            CREATE TABLE IF NOT EXISTS workspace_state (
-                id INTEGER PRIMARY KEY CHECK (id = 1),
-                chat_revision INTEGER NOT NULL DEFAULT 0
-            );
-            INSERT OR IGNORE INTO workspace_state (id, chat_revision) VALUES (1, 0);
-            CREATE TABLE IF NOT EXISTS knowledge_documents (
-                id TEXT PRIMARY KEY,
-                title TEXT NOT NULL,
-                file_name TEXT NOT NULL,
-                pages INTEGER NOT NULL,
-                size INTEGER NOT NULL
-            );
-            """
+            
         )
-        # Serialize the additive migration when two app instances start together.
+
         connection.execute('BEGIN IMMEDIATE')
         if 'context_json' not in {row['name'] for row in connection.execute('PRAGMA table_info(conversations)')}:
             connection.execute("ALTER TABLE conversations ADD COLUMN context_json TEXT NOT NULL DEFAULT '{}'")
         profile_insert = connection.execute(
-            """INSERT OR IGNORE INTO settings
-               (id, business_name, owner, email, website, business_type, address, notifications)
-               VALUES (1, ?, ?, ?, ?, ?, ?, ?)""",
+            ,
             (
                 DEFAULT_PROFILE["business_name"],
                 DEFAULT_PROFILE["owner"],
@@ -144,9 +66,7 @@ def initialize(db_path):
         )
         if profile_insert.rowcount == 1:
             connection.executemany(
-                """INSERT INTO tasks
-                   (title, description, category, priority, status, due_date, created_at)
-                   VALUES (?, ?, ?, ?, 'pending', NULL, ?)""",
+                ,
                 [(*task, now_iso()) for task in STARTER_TASKS],
             )
 
@@ -192,9 +112,7 @@ def get_task(db_path, task_id):
 def create_task(db_path, values):
     with connect(db_path) as connection:
         cursor = connection.execute(
-            """INSERT INTO tasks
-               (title, description, category, priority, status, due_date, created_at)
-               VALUES (?, '', ?, ?, 'pending', ?, ?)""",
+            ,
             (values["title"], values["category"], values["priority"], values["due_date"], now_iso()),
         )
         task_id = cursor.lastrowid
@@ -242,16 +160,13 @@ def save_scan(db_path, url, assessment):
     with connect(db_path) as connection:
         created_at = now_iso()
         cursor = connection.execute(
-            """INSERT INTO scans (url, score, created_at, checks_passed, checks_total)
-               VALUES (?, ?, ?, ?, ?)""",
+            ,
             (url, assessment["score"], created_at, assessment["checks_passed"], assessment["checks_total"]),
         )
         scan_id = cursor.lastrowid
         for finding in assessment["findings"]:
             connection.execute(
-                """INSERT INTO findings
-                   (scan_id, title, severity, status, description, recommendation)
-                   VALUES (?, ?, ?, ?, ?, ?)""",
+                ,
                 (
                     scan_id,
                     finding["title"],
@@ -272,8 +187,7 @@ def save_scan(db_path, url, assessment):
 
 def _findings(connection, scan_id):
     rows = connection.execute(
-        """SELECT id, title, severity, status, description, recommendation
-           FROM findings WHERE scan_id = ? ORDER BY id""",
+        ,
         (scan_id,),
     ).fetchall()
     return [dict(row) for row in rows]
@@ -301,9 +215,7 @@ def save_document(db_path, values, title, content):
     with connect(db_path) as connection:
         created_at = now_iso()
         cursor = connection.execute(
-            """INSERT INTO generated_documents
-               (type, title, business_name, owner, address, effective_date, content, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            ,
             (
                 values["type"], title, values["business_name"], values["owner"],
                 values["address"], values["effective_date"], content, created_at,
@@ -359,8 +271,7 @@ def save_conversation(db_path, question, answer, results, expected_revision=None
         if expected_revision is not None and revision != expected_revision:
             return None
         cursor = connection.execute(
-            """INSERT INTO conversations (question, answer, results_json, context_json, created_at)
-               VALUES (?, ?, ?, ?, ?)""",
+            ,
             (question, answer, json.dumps(results, ensure_ascii=False),
              json.dumps({key: value for key, value in (context or {}).items() if key in {'mode', 'language', 'source'}}), now_iso()),
         )
@@ -378,7 +289,7 @@ def list_conversations(db_path):
                 "answer": row["answer"],
                 "results": json.loads(row["results_json"]),
                 "created_at": row["created_at"],
-                **json.loads(row['context_json']),
+
             }
             for row in rows
         ]
@@ -402,15 +313,10 @@ def delete_conversation(db_path, conversation_id):
 
 
 def sync_knowledge(db_path, records, uploaded=None):
-    """Persist the catalog of real PDFs, including files present before an upgrade."""
+    
     with connect(db_path) as connection:
         connection.executemany(
-            """INSERT INTO knowledge_documents (id, title, file_name, pages, size)
-               VALUES (?, ?, ?, ?, ?)
-               ON CONFLICT(id) DO UPDATE SET title=excluded.title, file_name=excluded.file_name,
-                   pages=excluded.pages, size=excluded.size
-               WHERE title != excluded.title OR file_name != excluded.file_name
-                   OR pages != excluded.pages OR size != excluded.size""",
+            ,
             [(r["id"], r["title"], r["file_name"], r["pages"], r["size"]) for r in records],
         )
         current_ids = {r["id"] for r in records}

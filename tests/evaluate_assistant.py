@@ -1,8 +1,4 @@
-"""Optional live-model smoke test; uses a disposable workspace and real Ollama.
 
-Run: .venv/Scripts/python.exe tests/evaluate_assistant.py
-Requires the configured Ollama model to have been downloaded already.
-"""
 import io
 import json
 import os
@@ -62,8 +58,8 @@ def main():
             else:
                 assert result['mode'] == 'generated', result
                 assert result['answer'] and result['results'], result
-                # Inline citations depend on model wording; the UI always shows
-                # these real page references alongside the generated answer.
+
+
                 assert all(source['metadata']['page_number'] >= 1 for source in result['results'])
                 assert 'relevant excerpt(s)' not in result['answer']
                 assert '<think>' not in result['answer'] and '</think>' not in result['answer']

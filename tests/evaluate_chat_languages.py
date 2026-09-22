@@ -1,4 +1,4 @@
-"""Optional real Ollama check for ordinary chat and a searchable Nepali PDF."""
+
 import io
 import json
 import sys

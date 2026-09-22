@@ -1,4 +1,4 @@
-"""Response language selection and short, translated interface answers."""
+
 import re
 
 
