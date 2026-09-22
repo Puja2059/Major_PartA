@@ -214,9 +214,11 @@ def create_app(test_config=None):
         return jsonify({"error": "Page not found."}), 404
 
     @flask_app.errorhandler(Exception)
-    def handle_unexpected(error):
+    def handle_unexpected(error: Exception):
         if isinstance(error, HTTPException):
-            return jsonify({"error": error.description}), error.code
+            response = jsonify({"error": error.description})
+            response.status_code = error.code or 500
+            return response
         flask_app.logger.exception("Unexpected server error", exc_info=error)
         return jsonify({"error": "An unexpected server error occurred."}), 500
 
@@ -350,6 +352,8 @@ def create_app(test_config=None):
             raise ApiError(str(error), 409) from error
         except knowledge.KnowledgeError as error:
             raise ApiError(str(error), 400) from error
+        if record is None:
+            raise ApiError("Knowledge document could not be created.", 500)
         knowledge_catalog(uploaded=record)
         return jsonify({key: value for key, value in record.items() if not key.startswith("_")}), 201
 

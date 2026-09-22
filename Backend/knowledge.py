@@ -124,7 +124,10 @@ def save_upload(directory, uploaded_file):
     safe_stem = re.sub(r"[^A-Za-z0-9_-]+", "-", safe_stem).strip("-_")[:60] or "document"
     path = Path(directory) / f"{safe_stem}-{digest[:12]}.pdf"
     path.write_bytes(data)
-    return find_document(directory, digest[:16])
+    record = find_document(directory, digest[:16])
+    if record is None:
+        raise KnowledgeError("Knowledge document could not be created.")
+    return record
 
 
 def _keywords(question):
