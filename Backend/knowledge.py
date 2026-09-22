@@ -48,7 +48,13 @@ def _inspect_pdf(data):
         with pymupdf.open(stream=data, filetype="pdf") as document:
             if document.page_count < 1:
                 raise KnowledgeError("PDF must contain at least one page.")
-            pages = [page.get_text("text").strip() for page in document]
+            pages = []
+            for page in document:
+                page_text = page.get_text("text")
+                if isinstance(page_text, str):
+                    pages.append(page_text.strip())
+                else:
+                    pages.append("")
     except KnowledgeError:
         raise
     except Exception as error:
