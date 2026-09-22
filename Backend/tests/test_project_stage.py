@@ -47,11 +47,20 @@ class ProjectStageTests(unittest.TestCase):
                 "settings",
             ],
         )
-        self.assertFalse(payload["features"]["security_scanner"]["interactive"])
+        self.assertTrue(payload["features"]["security_scanner"]["interactive"])
         self.assertFalse(payload["features"]["legal_compliance"]["interactive"])
         self.assertFalse(payload["features"]["admin_panel"]["interactive"])
         self.assertFalse(payload["features"]["user_panel"]["interactive"])
         self.assertTrue(payload["features"]["legal_assistant"]["interactive"])
+
+    def test_part_a_allows_scanner_backend(self):
+        response = self.client.post(
+            "/api/scans",
+            json={"url": "https://example.com", "authorized": True},
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.get_json()["url"], "https://example.com")
 
     def test_full_stage_makes_part_b_features_interactive(self):
         self.app.config["PROJECT_STAGE"] = "full"

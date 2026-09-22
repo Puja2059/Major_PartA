@@ -365,6 +365,22 @@ class WebApiTests(unittest.TestCase):
         self.assertTrue(any(item["title"] == "Draft document deleted"
                             for item in reopened.get("/api/dashboard").get_json()["activity"]))
 
+    def test_terms_and_conditions_document_type_is_supported(self):
+        response = self.client.post(
+            "/api/documents",
+            json={
+                "type": "terms_and_conditions",
+                "business_name": "Everest Systems",
+                "owner": "Asha Rai",
+                "address": "Kathmandu",
+                "effective_date": "2026-09-14",
+            },
+        )
+        self.assertEqual(response.status_code, 201)
+        payload = response.get_json()
+        self.assertEqual(payload["title"], "Terms & Conditions")
+        self.assertIn("These terms apply", payload["content"])
+
     def test_document_fields_accept_saved_profile_limits(self):
         response = self.client.post(
             "/api/documents",

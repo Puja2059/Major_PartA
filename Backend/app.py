@@ -242,7 +242,7 @@ def create_app(test_config=None):
         role-aware checks belong in the Part B backend.
         """
         interactive = flask_app.config["PROJECT_STAGE"] == "full"
-        part_b_features = {"security_scanner", "legal_compliance", "admin_panel", "user_panel"}
+        part_b_features = {"legal_compliance", "admin_panel", "user_panel"}
         return jsonify(
             {
                 "stage": flask_app.config["PROJECT_STAGE"],
@@ -435,7 +435,7 @@ def create_app(test_config=None):
         _only_keys(payload, fields)
         document_type = _text(payload.get("type"), "type", maximum=40)
         if document_type not in TITLES:
-            raise ApiError("type must be privacy_policy, employment_agreement, nda, or incident_response.")
+            raise ApiError("type must be privacy_policy, employment_agreement, nda, incident_response, or terms_and_conditions.")
         values = {
             "type": document_type,
             "business_name": _text(payload.get("business_name"), "business_name", maximum=150),

@@ -60,6 +60,7 @@ const templates = [
   {id:'employment_agreement',title:'Employment agreement',icon:'user',category:'PEOPLE & WORK',description:'Start an agreement with clear responsibilities, working arrangements, and expectations.'},
   {id:'nda',title:'Non-disclosure agreement',icon:'shield-check',category:'BUSINESS',description:'Set out how confidential business information should be shared and protected.'},
   {id:'incident_response',title:'Incident response plan',icon:'scan',category:'CYBERSECURITY',description:'Give your team a practical starting point for responding to a security incident.'},
+  {id:'terms_and_conditions',title:'Terms & conditions',icon:'file-text',category:'BUSINESS',description:'Draft clear service terms covering access, payments, responsibilities, and dispute handling.'},
 ];
 const state = {page:'dashboard',data:null,projectConfig:null,taskFilter:'all',taskQuery:'',knowledgeQuery:'',knowledge:[],documents:[],conversations:[],activeConversationIds:null,selectedConversationId:null,chatDocument:'',chatLanguage:'',assistantStatus:null,renderVersion:0,dataVersion:0,historyVersion:0,busyChat:false,busyScan:false};
 const main = document.getElementById('main');

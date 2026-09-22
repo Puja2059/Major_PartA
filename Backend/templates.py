@@ -3,6 +3,7 @@ TITLES = {
     "employment_agreement": "Employment Agreement",
     "nda": "Non-Disclosure Agreement",
     "incident_response": "Incident Response Plan",
+    "terms_and_conditions": "Terms & Conditions",
 }
 
 
@@ -77,6 +78,25 @@ Remove the cause, restore from trusted backups, test critical services, monitor 
 
 5. Review
 Within a defined period, document the timeline, root causes, costs, lessons, and assigned corrective actions. Test and update this plan regularly.
+""",
+        "terms_and_conditions": """
+1. Scope and acceptance
+These terms apply to the supply of goods, services, digital access, or other offerings by the business to customers or users. By using the service, the customer accepts these terms and any policies referenced in them.
+
+2. Services and changes
+Describe the service, pricing, available features, delivery method, support hours, and any limits on access or delivery. The business may amend the terms to reflect operational changes, legal updates, or product improvements with reasonable notice.
+
+3. Payment, refunds, and cancellations
+State the price, billing cycle, payment method, due date, late fees, refund or cancellation policy, and any deposit or prepaid requirement. Clarify whether fees are fixed, recurring, or subject to change with notice.
+
+4. User responsibilities and prohibited conduct
+List the customer's obligations, acceptable use rules, account security expectations, required information, and any restrictions on misuse, abuse, illegal activity, or harmful conduct.
+
+5. Intellectual property, liability, and privacy
+Confirm ownership of the business's content, branding, software, and materials. State the limits of liability, exclusions for consequential losses, and how user data is handled under the privacy policy and applicable laws.
+
+6. Termination and dispute resolution
+Explain when the business or customer may suspend or end access, what happens to user content or unpaid amounts, and how disputes will be handled, including the governing law and any required notice or escalation steps.
 """,
     }
     return title, intro + bodies[document_type].strip() + "\n"
