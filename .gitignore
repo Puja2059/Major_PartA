@@ -2,7 +2,7 @@ Backend/chroma_db/
 Backend/chroma_db_corrupt_*/
 Backend/chroma.sqlite3
 Backend/data/
-Backend/.env
+Backend/.env_example
 .env
 Backend/__pycache__/
 frontend/__pycache__/
